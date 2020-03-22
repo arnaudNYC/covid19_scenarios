@@ -6,6 +6,7 @@ import ReactResizeDetector from 'react-resize-detector'
 import { TimeSeries } from '../../../algorithms/types/TimeSeries.types'
 
 const ASPECT_RATIO = 16 / 9
+const MOBILE_ASPECT_RATIO = 4 / 5
 const MAX_TRANSMISSION_RATIO = 1.2
 
 export interface DrawParams {
@@ -17,11 +18,15 @@ export interface DrawParams {
 }
 
 function draw({ data, width, height, onDataChange, d3ref }: DrawParams) {
+  if (d3ref.current === null) {
+    return
+  }
   const newData = data.map(d => {
     return { t: d.t, y: d.y }
   }) // copy
-  const tMin = data[0].t
-  const tMax = data[data.length - 1].t
+
+  const tMin = data[0] && data[0].t
+  const tMax = data[0] && data[data.length - 1].t
   const svg = d3ref.current
 
   const margin = {
@@ -225,8 +230,7 @@ export interface ContainmentGraphImplProps {
 export function ContainmentGraphImpl({ data, onDataChange, width, height }: ContainmentGraphImplProps) {
   const d3ref = useRef<SVGSVGElement>(null)
 
-  // FIXME: can we avoid some of the re-rendering? Add array of dependencies. Ensure proper cleanups.
-  useEffect(() => draw({ data, onDataChange, width, height, d3ref }))
+  useEffect(() => draw({ data, onDataChange, width, height, d3ref }), [data, width, height, d3ref.current])
 
   return (
     <div className="w-100 h-100">
@@ -236,7 +240,7 @@ export function ContainmentGraphImpl({ data, onDataChange, width, height }: Cont
             return <div className="w-100 h-100" />
           }
 
-          const height = width / ASPECT_RATIO
+          const height = width < 500 ? width / MOBILE_ASPECT_RATIO : width / ASPECT_RATIO
 
           return (
             <svg className="noselect" width={width} height={height} viewBox={`0 0 ${width} ${height}`} ref={d3ref} />
@@ -261,7 +265,7 @@ export function ContainmentGraph({ data, onDataChange }: ContainmentGraphProps) 
             return <div className="w-100 h-100" />
           }
 
-          const height = width / ASPECT_RATIO
+          const height = width < 500 ? width / MOBILE_ASPECT_RATIO : width / ASPECT_RATIO
 
           return <ContainmentGraphImpl data={data} onDataChange={onDataChange} width={width} height={height} />
         }}
